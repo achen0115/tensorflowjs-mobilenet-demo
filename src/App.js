@@ -1,26 +1,59 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {Component} from 'react';
 import './App.css';
+import * as mobilenet from '@tensorflow-models/mobilenet';
+import {Container, Progress} from 'semantic-ui-react';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import Dz from './Dz';
+
+class App extends Component {
+  imgRef = React.createRef();
+
+  model = null;
+
+  state = {
+    disable: true,
+    predicitons: null,
+  };
+
+  componentDidMount() {
+    mobilenet.load().then(model => {
+      this.model = model;
+      this.setState({disable: false});
+    });
+  }
+
+  render() {
+    return (
+      <Container>
+        <Dz
+          ref={this.imgRef}
+          clear={this.handleClearPredictions}
+          classify={this.handleClassify}
+        />
+        {!!this.state.predictions &&
+          this.state.predictions.map(({className, probability}) => (
+            <Progress percent={Math.round(probability * 100)} success>
+              {className}
+            </Progress>
+          ))}
+        <div>
+          <pre>{JSON.stringify(this.state.predictions, null, 2)}</pre>
+        </div>
+      </Container>
+    );
+  }
+
+  handleClearPredictions = () => {
+    this.setState({predictions: null});
+  };
+
+  handleClassify = () => {
+    this.setState({predictions: null});
+    this.model.classify(this.imgRef.current).then(predictions => {
+      console.log(predictions);
+      this.setState({predictions});
+    });
+  };
 }
 
 export default App;
